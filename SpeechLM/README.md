@@ -1,32 +1,60 @@
+
+# TTIC 31120 2023 Spring Final Project: Fine-Tuning SpeechLM with Text
+
+## Reproduce SpeechLM ASR Results
+### Download LibriSpeech datasets
+Download LibriSpeech train-clean-100 and dev-other subsets from https://www.openslr.org/12 and extract the files
+
+### Install Fairseq
+In the ``SpeechLM_finetuning/SpeechLM`` folder, run
+```
+git clone https://github.com/facebookresearch/fairseq.git
+cd fairseq/
+git checkout 272c4c5197
+pip3 install --editable .
+```
+
+### LibriSpeech ASR Data Preprocessing with Fairseq
+In the ``SpeechLM_finetuning/SpeechLM`` folder, run
+```
+mkdir manifest
+mkdir manifest/librispeech/
+dest_dir=path/to/manifest/librispeech/
+cp ckpt/dict.ltr.txt $dest_dir/
+```
+Then, in the ``SpeechLM_finetuning/SpeechLM/fairseq/`` folder, run the following cammands for both dev-other and train-clean-100
+```
+python examples/wav2vec/wav2vec_manifest.py /path/to/libri/dev-other/ --dest $dest_dir --ext "flac" --valid-percent 0 
+python examples/wav2vec/libri_labels.py $dest_dir/fine-tune.tsv --output-dir $dest_dir --output-name=dev-other                      
+```
+Then you should get the following files in your ``$dest_dir`` directory
+- dev_other.ltr
+- dev_other.tsv
+- dev_other.wrd
+- train_clean_100.ltr
+- train_clean_100.tsv
+- train_clean_100.wrd
+
+### Fine-Tune SpeechLM on LibriSpeech ASR
+In ``SpeechLM_finetuning/SpeechLM/``, run
+```
+model_path=path/to/your/pre-trained/model
+data_dir=${dest_dir}
+bash speechlm/scripts/tune_speechlm_asr/finetune_base_ctc.sh $model_path $data_dir 'tag400k'
+```
+
+<!-- ## Sentiment Analysis on SLUE with Speech Inputs
+Download the SLUE dataset
+
+## Sentiment Analysis on SLUE with Text Inputs
+Modify the checkpoint
+```
+state = torch.load(ckpt_pth)
+state['cfg']['task']['text_cfg']['text_data'] = '../../../../dataset/LibriLM/phone_unit/bin-idx/'
+torch.save(state, ckpt_pth)
+```
+
 # SpeechLM
-
-<!--**Pre-trained models for speech related tasks**-->
-
- [**SpeechLM: Enhanced Speech Pre-Training with Unpaired Textual Data**](https://arxiv.org/abs/2209.15329)
-
-- (Important) April 2023: We discovered some errors about the data in the pre-training experiments, which will affect all the results about SpeechLM-P Base models. We are re-conducting the related experiments and will update the paper with the new results.
-
-- (Done) Oct 2022: release the code and models
-- Oct 2022: release preprint in [arXiv](https://arxiv.org/abs/2209.15329)
-
-## Pre-Trained and Fine-tuned Models
-
-|  Model            |               Pre-training Dataset                                                                            | Fine-tuning Dataset                                               | Model |
-| :------:          | :----------------------------------------------:                                                              | :-----------------:                                               | :-----: |
-| SpeechLM-P Base   | [960 hrs LibriSpeech](http://www.openslr.org/12) + [40M Text](http://www.openslr.org/11)                      |                      -                                            | [~~Google drive~~](https://drive.google.com/file/d/1iJvhSGghNrMT-wAY1nwVu2YaYuTy1pxx/view?usp=sharing)  |
-| SpeechLM-P Base   | [960 hrs LibriSpeech](http://www.openslr.org/12) + [40M Text](http://www.openslr.org/11)                      | [100 hrs LibriSpeech](http://www.openslr.org/12)                  | [~~Google drive~~](https://drive.google.com/file/d/1mH3N7iKMWYk3rSBJErQPYf3x5ugqDq5x/view?usp=sharing)  |
-| SpeechLM-H Base   | [960 hrs LibriSpeech](http://www.openslr.org/12) + [40M Text](http://www.openslr.org/11)                      |                      -                                            | [Google drive](https://drive.google.com/file/d/1eblW8U8f9t-NTuCNRrNHwr-8BeLAUAmQ/view?usp=sharing)  |
-| SpeechLM-H Base   | [960 hrs LibriSpeech](http://www.openslr.org/12) + [40M Text](http://www.openslr.org/11)                      | [100 hrs LibriSpeech](http://www.openslr.org/12)                  | [Google drive](https://drive.google.com/file/d/1vXyO5DolbiWiTYZ6pkkKQsu2wJetaPlv/view?usp=sharing)  |
-| SpeechLM-P Base   | [960 hrs LibriSpeech](http://www.openslr.org/12) + [40M Text](http://www.openslr.org/11)                      | [En-De CoVoST-2](https://github.com/facebookresearch/covost)      | [~~Azure Storage~~](https://valle.blob.core.windows.net/share/speechlm/finetune_covost/checkpoint_ende.pt?sv=2020-08-04&st=2023-03-01T07%3A51%3A05Z&se=2033-03-02T07%3A51%3A00Z&sr=c&sp=rl&sig=QJXmSJG9DbMKf48UDIU1MfzIro8HQOf3sqlNXiflY1I%3D)  |
-| SpeechLM-P Base   | [960 hrs LibriSpeech](http://www.openslr.org/12) + [40M Text](http://www.openslr.org/11)                      | [En-Ca CoVoST-2](https://github.com/facebookresearch/covost)      | [~~Azure Storage~~](https://valle.blob.core.windows.net/share/speechlm/finetune_covost/checkpoint_enca.pt?sv=2020-08-04&st=2023-03-01T07%3A51%3A05Z&se=2033-03-02T07%3A51%3A00Z&sr=c&sp=rl&sig=QJXmSJG9DbMKf48UDIU1MfzIro8HQOf3sqlNXiflY1I%3D)  |
-| SpeechLM-P Base   | [960 hrs LibriSpeech](http://www.openslr.org/12) + [40M Text](http://www.openslr.org/11)                      | [En-Ar CoVoST-2](https://github.com/facebookresearch/covost)      | [~~Azure Storage~~](https://valle.blob.core.windows.net/share/speechlm/finetune_covost/checkpoint_enar.pt?sv=2020-08-04&st=2023-03-01T07%3A51%3A05Z&se=2033-03-02T07%3A51%3A00Z&sr=c&sp=rl&sig=QJXmSJG9DbMKf48UDIU1MfzIro8HQOf3sqlNXiflY1I%3D)  |
-| SpeechLM-P Base   | [960 hrs LibriSpeech](http://www.openslr.org/12) + [40M Text](http://www.openslr.org/11)                      | [En-Tr CoVoST-2](https://github.com/facebookresearch/covost)      | [~~Azure Storage~~](https://valle.blob.core.windows.net/share/speechlm/finetune_covost/checkpoint_entr.pt?sv=2020-08-04&st=2023-03-01T07%3A51%3A05Z&se=2033-03-02T07%3A51%3A00Z&sr=c&sp=rl&sig=QJXmSJG9DbMKf48UDIU1MfzIro8HQOf3sqlNXiflY1I%3D)  |
-| SpeechLM-P Large  | [60k hrs LibriLight](https://github.com/facebookresearch/libri-light) + [40M Text](http://www.openslr.org/11) |                      -                                            | [Google drive](https://drive.google.com/file/d/1QjLIgTJKIylVIp5hUkfSjGPtz8Xo7Lky/view?usp=sharing)  |
-| SpeechLM-P Large  | [60k hrs LibriLight](https://github.com/facebookresearch/libri-light) + [40M Text](http://www.openslr.org/11) | [960 hrs LibriSpeech](http://www.openslr.org/12)                  | [Google drive](https://drive.google.com/file/d/1YZQDVv096o8Opt0RBnkRiZXYPRDqKZnP/view?usp=sharing)  |
-| SpeechLM-P Large  | [60k hrs LibriLight](https://github.com/facebookresearch/libri-light) + [40M Text](http://www.openslr.org/11) | [En-De CoVoST-2](https://github.com/facebookresearch/covost)      | [Google drive](https://drive.google.com/file/d/1qYygNWSc11TQbBI1OzC4ChlR-dNh8t9S/view?usp=sharing)  |
-| SpeechLM-P Large  | [60k hrs LibriLight](https://github.com/facebookresearch/libri-light) + [40M Text](http://www.openslr.org/11) | [En-Ca CoVoST-2](https://github.com/facebookresearch/covost)      | [Google drive](https://drive.google.com/file/d/162U88mwso2aVfzzPkEM2nP_vwTpcb57T/view?usp=sharing)  |
-| SpeechLM-P Large  | [60k hrs LibriLight](https://github.com/facebookresearch/libri-light) + [40M Text](http://www.openslr.org/11) | [En-Ar CoVoST-2](https://github.com/facebookresearch/covost)      | [Google drive](https://drive.google.com/file/d/1lbTSRXewEeb2t45URunD6EiJcbniyjWW/view?usp=sharing)  |
-| SpeechLM-P Large  | [60k hrs LibriLight](https://github.com/facebookresearch/libri-light) + [40M Text](http://www.openslr.org/11) | [En-Tr CoVoST-2](https://github.com/facebookresearch/covost)      | [Google drive](https://drive.google.com/file/d/1Er4I_jHS175pQQph223yKtiiLQ378VvH/view?usp=sharing)  |
 
 
 ## Extract features using pre-trained models
@@ -262,5 +290,5 @@ If you find our work is useful in your research, please cite the following paper
 
 For help or issues using SpeechLM models, please submit a GitHub issue.
 
-For other communications related to SpeechLM, please contact Long Zhou (`lozhou@microsoft.com`).
+For other communications related to SpeechLM, please contact Long Zhou (`lozhou@microsoft.com`). -->
 

@@ -11,7 +11,7 @@ mount=$4
 world_size=$5
 update_freq=$6
 [ -z $mount ] && mount=${PWD}
-[ -z $world_size ] && world_size=8
+[ -z $world_size ] && world_size=1
 [ -z $update_freq ] && update_freq=1
 
 CODE_ROOT=${PWD}
