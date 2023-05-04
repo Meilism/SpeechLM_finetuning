@@ -10,9 +10,15 @@ In the ``SpeechLM_finetuning/SpeechLM`` folder, run
 ```
 git clone https://github.com/facebookresearch/fairseq.git
 cd fairseq/
-git checkout 272c4c5197
+git checkout 0338cdc3094ca7d29ff4d36d64791f7b4e4b5e6e
+```
+
+And remember to put the addons into fairseq directory before installing fairseq
+```
+cp -r ../fairseq_addons/fairseq/* ./
 pip3 install --editable .
 ```
+If you fail to build the package, try to update your gcc version to gcc 5.4
 
 ### LibriSpeech ASR Data Preprocessing with Fairseq
 In the ``SpeechLM_finetuning/SpeechLM`` folder, run
@@ -20,7 +26,7 @@ In the ``SpeechLM_finetuning/SpeechLM`` folder, run
 mkdir manifest
 mkdir manifest/librispeech/
 dest_dir=path/to/manifest/librispeech/
-cp ckpt/dict.ltr.txt $dest_dir/
+cp dataset/LibriLM/phone_unit/bin-idx/dict.ltr.txt $dest_dir/
 ```
 Then, in the ``SpeechLM_finetuning/SpeechLM/fairseq/`` folder, run the following cammands for both dev-other and train-clean-100
 ```
@@ -36,23 +42,50 @@ Then you should get the following files in your ``$dest_dir`` directory
 - train_clean_100.wrd
 
 ### Fine-Tune SpeechLM on LibriSpeech ASR
-In ``SpeechLM_finetuning/SpeechLM/``, run
+First, reach out to me to get the pre-trained SpeechLM_P_Base checkpoint. Then do some modification to the checkpoint file
+```python
+state = torch.load(ckpt_pth)
+state['cfg']['task']['text_cfg']['text_data'] = '/path/to/SpeechLM_finetuning/SpeechLM/dataset/LibriLM/phone_unit/bin-idx/'
+torch.save(state, ckpt_pth)
+```
+
+You're ready to train your ASR model! In ``SpeechLM_finetuning/SpeechLM/``, run
 ```
 model_path=path/to/your/pre-trained/model
 data_dir=${dest_dir}
-bash speechlm/scripts/tune_speechlm_asr/finetune_base_ctc.sh $model_path $data_dir 'tag400k'
+exp_name=YOUR_EXP_NAME
+bash speechlm/scripts/tune_speechlm_asr/finetune_base_ctc.sh $model_path $data_dir $exp_name
 ```
 
+### Fine-Tune SpeechLM on Slue Sentiment Analysis
+Firstly, clone the Github repository of SLUE and download the dataset
+```
+cd slue/directory
+bash scripts/download_datasets.sh
+```
+
+Then go back to ``SpeechLM_finetuning/SpeechLM/``, and run the following command to fine-tune SpeechLM on SLUE sentiment analysis:
+```
+bash speechlm/scripts/slue/finetune_base_speech_sa.sh $model_path $data_dir $exp_name     
+```
+After fine-tuning the model, you will get fine-tuned checkpoints in ``exp/finetune_slue_sa/ckpt/${exp_name}``.
+Before proceeding on, we need to a dirty trick to the checkpoint:
+```python
+state = torch.load(finetuned_ckpt_pth)
+state['cfg']['model']['w2v_args'] = None
+torch.save(state, finetuned_ckpt_pth)
+```
+
+Then, you are ready to get the sentiment analysis results! The last step is:
+```
+save_dir=exp/finetune_slue_sa/ckpt/${exp_name}
+python3 -m speechlm.eval.eval_w2v_sentiment --data $data_dir --subset dev --save-dir $save_dir  --checkpoint-file checkpoint_best.pt --use-gpu --eval
+```
+The results will also be put in ``$save_dir/``.
 <!-- ## Sentiment Analysis on SLUE with Speech Inputs
 Download the SLUE dataset
 
 ## Sentiment Analysis on SLUE with Text Inputs
-Modify the checkpoint
-```
-state = torch.load(ckpt_pth)
-state['cfg']['task']['text_cfg']['text_data'] = '../../../../dataset/LibriLM/phone_unit/bin-idx/'
-torch.save(state, ckpt_pth)
-```
 
 # SpeechLM
 

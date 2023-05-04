@@ -16,7 +16,8 @@ from typing import List, Optional
 import numpy as np
 import torch
 import torch.nn.functional as F
-from fairseq import metrics, utils
+from fairseq import utils
+from fairseq.logging import metrics
 from fairseq.criterions import FairseqCriterion, register_criterion
 from fairseq.criterions.label_smoothed_cross_entropy import label_smoothed_nll_loss
 from fairseq.dataclass import FairseqDataclass

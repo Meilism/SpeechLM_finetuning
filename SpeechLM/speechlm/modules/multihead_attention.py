@@ -50,6 +50,7 @@ class MultiheadAttention(FairseqMultiheadAttention):
             add_zero_attn,
             self_attention,
             encoder_decoder_attention,
+            None,
             q_noise,
             qn_block_size,
         )
