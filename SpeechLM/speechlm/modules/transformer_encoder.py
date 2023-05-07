@@ -8,6 +8,7 @@
 # ----------------------------------------------------------------------------
 
 import math
+import contextlib
 from typing import Dict, List, Optional
 
 import torch
@@ -147,6 +148,7 @@ class TransformerEncoderBase(FairseqEncoder):
         return_all_hiddens: bool = False,
         token_embeddings: Optional[torch.Tensor] = None,
         uniformity_layers: Optional[List[int]] = None,
+        freeze_layers: int = 0,
     ):
         """
         Args:
@@ -172,7 +174,7 @@ class TransformerEncoderBase(FairseqEncoder):
                   Only populated if *return_all_hiddens* is True.
         """
         return self.forward_scriptable(
-            src_tokens, src_lengths, return_all_hiddens, token_embeddings, uniformity_layers
+            src_tokens, src_lengths, return_all_hiddens, token_embeddings, uniformity_layers, freeze_layers
         )
 
     # TorchScript doesn't support super() method so that the scriptable Subclass
@@ -186,6 +188,7 @@ class TransformerEncoderBase(FairseqEncoder):
         return_all_hiddens: bool = False,
         token_embeddings: Optional[torch.Tensor] = None,
         uniformity_layers: Optional[List[int]] = None,
+        freeze_layers: int = 0,
     ):
         """
         Args:
@@ -214,7 +217,8 @@ class TransformerEncoderBase(FairseqEncoder):
         encoder_padding_mask = src_tokens.eq(self.padding_idx)
         has_pads = src_tokens.device.type == "xla" or encoder_padding_mask.any()
 
-        x, encoder_embedding = self.forward_embedding(src_tokens, token_embeddings)
+        with torch.no_grad() if not freeze_layers > 0 else contextlib.ExitStack():
+            x, encoder_embedding = self.forward_embedding(src_tokens, token_embeddings)
 
         # account for padding while computing the representation
         if has_pads:
@@ -241,17 +245,19 @@ class TransformerEncoderBase(FairseqEncoder):
             uniformity_hiddens.append(x)
 
         # encoder layers
-        for i, layer in enumerate(self.layers):
-            x = layer(
-                x, encoder_padding_mask=encoder_padding_mask if has_pads else None,
-                pos_bias=pos_k,
-            )
-            if uniformity_layers is not None and i+1 in uniformity_layers:
-                x = F.normalize(x.float(), dim=-1).type_as(x)
-                uniformity_hiddens.append(x)
-            if return_all_hiddens:
-                assert encoder_states is not None
-                encoder_states.append(x)
+        for i in range(len((self.layers))):
+            layer = self.layers[i]
+            with torch.no_grad() if freeze_layers > i else contextlib.ExitStack():
+                x = layer(
+                    x, encoder_padding_mask=encoder_padding_mask if has_pads else None,
+                    pos_bias=pos_k,
+                )
+                if uniformity_layers is not None and i+1 in uniformity_layers:
+                    x = F.normalize(x.float(), dim=-1).type_as(x)
+                    uniformity_hiddens.append(x)
+                if return_all_hiddens:
+                    assert encoder_states is not None
+                    encoder_states.append(x)
 
         if self.layer_norm is not None:
             x = self.layer_norm(x)

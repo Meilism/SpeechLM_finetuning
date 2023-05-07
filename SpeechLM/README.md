@@ -46,6 +46,7 @@ First, reach out to me to get the pre-trained SpeechLM_P_Base checkpoint. Then d
 ```python
 state = torch.load(ckpt_pth)
 state['cfg']['task']['text_cfg']['text_data'] = '/path/to/SpeechLM_finetuning/SpeechLM/dataset/LibriLM/phone_unit/bin-idx/'
+state["cfg"]["model"]["freeze_layers"] = 0 
 torch.save(state, ckpt_pth)
 ```
 
@@ -82,6 +83,14 @@ save_dir=exp/finetune_slue_sa/ckpt/${exp_name}
 python3 -m speechlm.eval.eval_w2v_sentiment --data $data_dir --subset dev --save-dir $save_dir  --checkpoint-file checkpoint_best.pt --use-gpu --eval
 ```
 The results will also be put in ``$save_dir/``.
+
+<!-- ### Fine-Tune SpeechLM on Slue Sentiment Analysis with Text Inputs
+First prepare text inputs for SpeechLM
+```
+slue_path=path/to/slue/manifest
+bash speechlm/data_process/prepare_phn2ltr_slue.sh ${slue_path}/slue-voxceleb/ slue-voxceleb
+bash speechlm/data_process/prepare_phn2ltr_slue.sh ${slue_path}/slue-voxpopuli/ slue-voxpopuli 
+``` -->
 <!-- ## Sentiment Analysis on SLUE with Speech Inputs
 Download the SLUE dataset
 
@@ -323,5 +332,4 @@ If you find our work is useful in your research, please cite the following paper
 
 For help or issues using SpeechLM models, please submit a GitHub issue.
 
-For other communications related to SpeechLM, please contact Long Zhou (`lozhou@microsoft.com`). -->
-
+For other communications related to SpeechLM, please contact Long Zhou (`lozhou@microsoft.com

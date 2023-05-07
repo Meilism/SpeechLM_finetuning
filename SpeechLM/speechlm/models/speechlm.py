@@ -105,6 +105,10 @@ class SpeechlmConfig(HubertConfig):
         metadata={"help": "decoder dictionary dimension"},
     )
 
+    freeze_layers: int = field(
+        default=0, metadata={"help": "dont finetune this many bottom layers in speechlm text encoder"}
+    )
+
 
 @register_model("speechlm", dataclass=SpeechlmConfig)
 class SpeechlmModel(BaseFairseqModel):
@@ -202,6 +206,7 @@ class SpeechlmModel(BaseFairseqModel):
         self.mix_with_unit = cfg.mix_with_unit
         self.use_pred_unit = cfg.use_pred_unit
         self.l2_embedding = cfg.l2_embedding
+        self.freeze_layers = cfg.freeze_layers
         if self.add_unit_encoder:
             assert len(unit_dictionary) == self.num_classes[0], f"unit_dictionary: {len(unit_dictionary)}, self.num_classes[0]: {self.num_classes[0]}"
             ### build unit pre-net, and shared with hubert label_embs if needed (default: False)
@@ -562,7 +567,7 @@ class SpeechlmModel(BaseFairseqModel):
                 use_pred_unit=self.use_pred_unit,
                 l2_embedding=self.l2_embedding,
             )
-            encoder_out = self.unit_encoder(src_tokens, token_embeddings=x_emb)
+            encoder_out = self.unit_encoder(src_tokens, token_embeddings=x_emb, freeze_layers=self.freeze_layers)
 
             result['encoder_out'] = encoder_out['encoder_out']  # [(T, B, D)]
             result['encoder_padding_mask'] = encoder_out['encoder_padding_mask']    # [(B, T)]
@@ -604,6 +609,7 @@ class SpeechlmModel(BaseFairseqModel):
             src_tokens,
             token_embeddings=unit_embeddings,
             return_all_hiddens=output_layer is not None,
+            freeze_layers=self.freeze_layers,
         )
 
         result = {}
@@ -660,7 +666,8 @@ class SpeechlmModel(BaseFairseqModel):
             encoder_out = self.unit_encoder(
                 src_tokens,
                 token_embeddings=x,
-                return_all_hiddens=output_layer is not None
+                return_all_hiddens=output_layer is not None,
+                freeze_layers=self.freeze_layers,
             )
             res["x"] = encoder_out['encoder_out'][0].transpose(0, 1)  # (B, T, D)
         

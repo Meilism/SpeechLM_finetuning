@@ -71,6 +71,7 @@ model:
   activation_dropout: 0.1
   feature_grad_mult: 0.0
   freeze_finetune_updates: 2000
+  freeze_layers: 1
 
 hydra:
   job:
