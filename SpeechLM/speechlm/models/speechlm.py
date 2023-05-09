@@ -8,6 +8,7 @@
 # ----------------------------------------------------------------------------
 
 import logging
+import contextlib
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
@@ -567,7 +568,7 @@ class SpeechlmModel(BaseFairseqModel):
                 use_pred_unit=self.use_pred_unit,
                 l2_embedding=self.l2_embedding,
             )
-            encoder_out = self.unit_encoder(src_tokens, token_embeddings=x_emb, freeze_layers=self.freeze_layers)
+            encoder_out = self.unit_encoder(src_tokens, token_embeddings=x_emb)
 
             result['encoder_out'] = encoder_out['encoder_out']  # [(T, B, D)]
             result['encoder_padding_mask'] = encoder_out['encoder_padding_mask']    # [(B, T)]
@@ -609,7 +610,6 @@ class SpeechlmModel(BaseFairseqModel):
             src_tokens,
             token_embeddings=unit_embeddings,
             return_all_hiddens=output_layer is not None,
-            freeze_layers=self.freeze_layers,
         )
 
         result = {}
@@ -657,12 +657,13 @@ class SpeechlmModel(BaseFairseqModel):
         padding_mask = res["padding_mask"]
 
         if self.add_unit_encoder:
-            src_tokens, x, _ = self.convert_embeddings(
-                x,
-                padding_mask,
-                mix_with_unit=False,
-                use_pred_unit=False,
-            )
+            with torch.no_grad() if self.freeze_layers >= 0 else contextlib.ExitStack():
+                src_tokens, x, _ = self.convert_embeddings(
+                    x,
+                    padding_mask,
+                    mix_with_unit=False,
+                    use_pred_unit=False,
+                )
             encoder_out = self.unit_encoder(
                 src_tokens,
                 token_embeddings=x,

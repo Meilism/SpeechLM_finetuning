@@ -17,6 +17,12 @@ def main():
         "--data", type=str, required=True, help="manifest dir for data loading"
     )
     parser.add_argument(
+        "--text_data", type=str, required=False, help="bin-idx/ directory which contains preprocessed dataset, only used for text inputs"
+    )
+    parser.add_argument(
+        "--input", type=str, required=True, choices=["speech", "text"], help="speech or text inputs"
+    )
+    parser.add_argument(
         "--subset", type=str, required=True, help="split name (test, dev, finetune"
     )
     parser.add_argument(
@@ -55,12 +61,23 @@ def main():
     checkpoint = SpeechLMSeqCls.from_pretrained(
         checkpoint_dir, checkpoint_file=args.checkpoint_file
     )
-
-    checkpoint.task.cfg.data = args.data
-    checkpoint.task.load_dataset(args.subset)
-    checkpoint.task.load_label2id
+    
+    if args.input == "text":
+        assert args.text_data is not None
+    
+    if args.input == "speech":
+        task_cfg = checkpoint.task.cfg
+        task_cfg.data = args.data
+        task = audio_classification.AudioClassificationTask(task_cfg)
+    elif args.input == "text":
+        task_cfg = audio_classification.TextClassificationConfig(**checkpoint.task.cfg)
+        task_cfg.data = args.data
+        task_cfg.text_data = args.text_data
+        task = audio_classification.TextClassificationTask(task_cfg)
+    task.load_dataset(args.subset)
+    task.load_label2id
     checkpoint.to(device)
-    data = checkpoint.task.datasets[args.subset]
+    data = task.datasets[args.subset]
     model = checkpoint.models[0]
     model.eval()
     preds = []
@@ -76,7 +93,7 @@ def main():
             gt.append(input["label"])
     id2label = {i: l for i, l in enumerate(checkpoint.task.label2id)}
 
-    output_tsv = os.path.join(args.save_dir, f"pred-{args.subset}.sent")
+    output_tsv = os.path.join(args.save_dir, f"pred-{args.subset}-{args.input}-input.sent")
     fid = open(output_tsv, "w")
     for sent_id in preds:
         fid.write(f"{id2label[sent_id]}\n")

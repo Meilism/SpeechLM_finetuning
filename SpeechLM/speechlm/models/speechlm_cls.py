@@ -214,7 +214,11 @@ class SpeechLMSeqCls(BaseFairseqModel):
             return utils.softmax(logits.float(), dim=-1)
 
     def forward(self, **kwargs):
-        x = self.w2v_encoder(**kwargs)
+        assert "source" in kwargs or "src_tokens" in kwargs
+        if "source" in kwargs and kwargs["source"].dtype!=torch.int64:
+            x = self.w2v_encoder(**kwargs)
+        else:
+            x = self.w2v_encoder.forward_text(**kwargs)
         padding_mask = (
             x["padding_mask"].transpose(0, 1) if x["padding_mask"] is not None else None
         )
@@ -225,6 +229,11 @@ class SpeechLMSeqCls(BaseFairseqModel):
 
     def extract_features(self, *args, **kwargs):
         return self.w2v_encoder.w2v_model.extract_features(*args, **kwargs)
+
+
+@register_model("speechlm_text_seq_cls", dataclass=SpeechLMSeqClsConfig)
+class SpeechLMTextSeqCls(SpeechLMSeqCls):
+    pass
 
 
 class SpeechLMEncoder(FairseqEncoder):
@@ -327,25 +336,24 @@ class SpeechLMEncoder(FairseqEncoder):
             "padding_mask": padding_mask,
         }
 
-    def forward_text(self, source, padding_mask, tbc=True, **kwargs):
-        padding_mask = src_tokens == self.padding_idx
-
+    def forward_text(self, source=None, src_tokens=None, tbc=True, **kwargs):
+        assert source is not None or src_tokens is not None
+        source = source if source is not None else src_tokens
+        
         ft = self.freeze_finetune_updates <= self.num_updates
 
         with torch.no_grad() if not ft else contextlib.ExitStack():
-            unit_embeddings = self.w2v_model.unit_embed_tokens(source)
-            
             encoder_out = self.w2v_model.unit_encoder(
                 source,
-                token_embeddings=unit_embeddings,
+                freeze_layers=self.w2v_model.freeze_layers,
             )
 
-        x = self.final_dropout(x)
+        encoder_out["encoder_out"] = self.final_dropout(encoder_out["encoder_out"][0])
 
         return {
             "encoder_out": encoder_out["encoder_out"],  # T x B x C
-            "encoder_padding_mask": padding_mask,  # B x T
-            "padding_mask": padding_mask,
+            "encoder_padding_mask": encoder_out["encoder_padding_mask"][0],  # B x T
+            "padding_mask": encoder_out["encoder_padding_mask"][0],
         }
 
     def reorder_encoder_out(self, encoder_out, new_order):

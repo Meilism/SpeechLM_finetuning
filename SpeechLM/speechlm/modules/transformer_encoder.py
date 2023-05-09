@@ -217,7 +217,7 @@ class TransformerEncoderBase(FairseqEncoder):
         encoder_padding_mask = src_tokens.eq(self.padding_idx)
         has_pads = src_tokens.device.type == "xla" or encoder_padding_mask.any()
 
-        with torch.no_grad() if not freeze_layers > 0 else contextlib.ExitStack():
+        with torch.no_grad() if freeze_layers >= 0 else contextlib.ExitStack():
             x, encoder_embedding = self.forward_embedding(src_tokens, token_embeddings)
 
         # account for padding while computing the representation

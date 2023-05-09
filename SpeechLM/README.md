@@ -7,14 +7,14 @@ Download LibriSpeech train-clean-100 and dev-other subsets from https://www.open
 
 ### Install Fairseq
 In the ``SpeechLM_finetuning/SpeechLM`` folder, run
-```
+``` bash
 git clone https://github.com/facebookresearch/fairseq.git
 cd fairseq/
 git checkout 0338cdc3094ca7d29ff4d36d64791f7b4e4b5e6e
 ```
 
 And remember to put the addons into fairseq directory before installing fairseq
-```
+``` bash
 cp -r ../fairseq_addons/fairseq/* ./
 pip3 install --editable .
 ```
@@ -22,14 +22,14 @@ If you fail to build the package, try to update your gcc version to gcc 5.4
 
 ### LibriSpeech ASR Data Preprocessing with Fairseq
 In the ``SpeechLM_finetuning/SpeechLM`` folder, run
-```
+``` bash
 mkdir manifest
 mkdir manifest/librispeech/
 dest_dir=path/to/manifest/librispeech/
 cp dataset/LibriLM/phone_unit/bin-idx/dict.ltr.txt $dest_dir/
 ```
 Then, in the ``SpeechLM_finetuning/SpeechLM/fairseq/`` folder, run the following cammands for both dev-other and train-clean-100
-```
+``` bash
 python examples/wav2vec/wav2vec_manifest.py /path/to/libri/dev-other/ --dest $dest_dir --ext "flac" --valid-percent 0 
 python examples/wav2vec/libri_labels.py $dest_dir/fine-tune.tsv --output-dir $dest_dir --output-name=dev-other                      
 ```
@@ -51,7 +51,7 @@ torch.save(state, ckpt_pth)
 ```
 
 You're ready to train your ASR model! In ``SpeechLM_finetuning/SpeechLM/``, run
-```
+``` bash
 model_path=path/to/your/pre-trained/model
 data_dir=${dest_dir}
 exp_name=YOUR_EXP_NAME
@@ -60,14 +60,15 @@ bash speechlm/scripts/tune_speechlm_asr/finetune_base_ctc.sh $model_path $data_d
 
 ### Fine-Tune SpeechLM on Slue Sentiment Analysis
 Firstly, clone the Github repository of SLUE and download the dataset
-```
+``` bash
 cd slue/directory
 bash scripts/download_datasets.sh
 ```
 
 Then go back to ``SpeechLM_finetuning/SpeechLM/``, and run the following command to fine-tune SpeechLM on SLUE sentiment analysis:
-```
-bash speechlm/scripts/slue/finetune_base_speech_sa.sh $model_path $data_dir $exp_name     
+``` bash
+freeze_layers=number/of/frozen/layers/between/0~6
+bash speechlm/scripts/slue/finetune_base_speech_sa.sh $model_path $data_dir $exp_name $freeze_layers
 ```
 After fine-tuning the model, you will get fine-tuned checkpoints in ``exp/finetune_slue_sa/ckpt/${exp_name}``.
 Before proceeding on, we need to a dirty trick to the checkpoint:
@@ -78,19 +79,45 @@ torch.save(state, finetuned_ckpt_pth)
 ```
 
 Then, you are ready to get the sentiment analysis results! The last step is:
-```
+``` bash
 save_dir=exp/finetune_slue_sa/ckpt/${exp_name}
-python3 -m speechlm.eval.eval_w2v_sentiment --data $data_dir --subset dev --save-dir $save_dir  --checkpoint-file checkpoint_best.pt --use-gpu --eval
+python3 -m speechlm.eval.eval_slue_speech_sa --data $data_dir --subset dev --save-dir $save_dir  --checkpoint-file checkpoint_best.pt --use-gpu --eval
 ```
 The results will also be put in ``$save_dir/``.
 
-<!-- ### Fine-Tune SpeechLM on Slue Sentiment Analysis with Text Inputs
+### Fine-Tune SpeechLM on Slue Sentiment Analysis with Text Inputs
 First prepare text inputs for SpeechLM
-```
+``` bash
 slue_path=path/to/slue/manifest
 bash speechlm/data_process/prepare_phn2ltr_slue.sh ${slue_path}/slue-voxceleb/ slue-voxceleb
 bash speechlm/data_process/prepare_phn2ltr_slue.sh ${slue_path}/slue-voxpopuli/ slue-voxpopuli 
-``` -->
+```
+
+Then run the code below to fine-tune SpeechLM on text inputs
+``` bash
+freeze_layers=number/of/frozen/layers/between/0~6
+bash speechlm/scripts/slue/finetune_base_text_sa.sh $model_path $data_dir $exp_name $freeze_layers
+```
+
+The fine-tuned checkpoint will be save in ``exp/finetune_slue_sa/ckpt/${exp_name}``.
+Again, we need to modify the checkpoint by:
+```python
+state = torch.load(finetuned_ckpt_pth)
+state['cfg']['model']['w2v_args'] = None
+torch.save(state, finetuned_ckpt_pth)
+```
+
+Since the model is fine-tuned on text, we can evaluate it with either text or speech inputs. The corresponding commands are:
+``` bash
+save_dir=exp/finetune_slue_sa/ckpt/${exp_name}
+input_type=speech/or/text
+text_data=path/to/the/bin-idx/dir # only used when input_type=text
+python3 -m speechlm.eval.eval_slue_text_sa --data $data_dir --input $input_type --subset dev --save-dir $save_dir  --checkpoint-file checkpoint_best.pt --use-gpu --eval [--text_data $text_data]
+```
+
+<!-- SpeechLMCLS redundancy -->
+<!-- freeze_-1 worse than original -->
+
 <!-- ## Sentiment Analysis on SLUE with Speech Inputs
 Download the SLUE dataset
 
@@ -332,4 +359,5 @@ If you find our work is useful in your research, please cite the following paper
 
 For help or issues using SpeechLM models, please submit a GitHub issue.
 
-For other communications related to SpeechLM, please contact Long Zhou (`lozhou@microsoft.com
+For other communications related to SpeechLM, please contact Long Zhou (`lozhou@microsoft.com`). -->
+

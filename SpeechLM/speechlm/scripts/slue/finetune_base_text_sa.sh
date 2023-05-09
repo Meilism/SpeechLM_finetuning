@@ -23,13 +23,13 @@ MODEL_DIR="${mount}/exp/finetune_slue_sa/$exp_name/${cpt}"
 [ -d $MODEL_DIR ] || mkdir -p $MODEL_DIR
 
 config_dir=$CODE_ROOT/speechlm/config/slue/
-config=speechlm_base_speech_sa_finetune
+config=speechlm_base_text_sa_finetune
 train_subset=fine-tune
 valid_subset=dev
 
 pool_method=self_attn
 classifier_dropout=0.2
-max_tokens=1400000
+max_tokens=4375
 
 python $CODE_ROOT/fairseq/fairseq_cli/hydra_train.py \
   --config-dir $config_dir \
@@ -37,6 +37,7 @@ python $CODE_ROOT/fairseq/fairseq_cli/hydra_train.py \
   common.user_dir=$CODE_ROOT/speechlm \
   \
   task.data=$DATA_DIR \
+  task.text_data=$CODE_ROOT/dataset/slue-voxceleb/phone_unit/bin-idx/ \
   model.w2v_path=${w2v_path} \
   model.pool_method="$pool_method" \
   model.classifier_dropout="$classifier_dropout" \

@@ -1,1 +1,4 @@
 __pycache__/
+.hydra/
+*.pt
+*.log

@@ -22,7 +22,8 @@ fairseq-preprocess \
   --destdir $outdir \
   --thresholdsrc 0 \
   --srcdict ${DICT} \
-  --workers 40
+  --workers 40 \
+  --dataset-impl lazy
 
 mv $outdir/train.idx $outdir/${outname}${suffix}.idx
 mv $outdir/train.bin $outdir/${outname}${suffix}.bin

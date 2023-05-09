@@ -23,14 +23,15 @@ distributed_training:
   nprocs_per_node: 8
 
 task:
-  _name: slue_audio_classification
+  _name: slue_text_classification
   data: ???
+  text_data: ???
   normalize: false  # must be consistent with pre-training
   labels: sent
 
 dataset:
   num_workers: 0
-  max_tokens: 1600000
+  max_tokens: 5000
   skip_invalid_size_inputs_valid_test: true
   validate_after_updates: ${model.freeze_finetune_updates}
   validate_interval: 1000000
@@ -59,7 +60,7 @@ lr_scheduler:
   final_lr_scale: 0.05
 
 model:
-  _name: speechlm_seq_cls
+  _name: speechlm_text_seq_cls
   pool_method: avg
   classifier_dropout: 0.2
   w2v_path: ???
