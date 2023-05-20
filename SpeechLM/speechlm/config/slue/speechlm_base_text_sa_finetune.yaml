@@ -40,7 +40,7 @@ dataset:
   required_batch_size_multiple: 1
 
 criterion:
-  _name: slue_sequence_classification
+  _name: speechlm_sequence_classification
 
 optimization:
   max_update: 30000

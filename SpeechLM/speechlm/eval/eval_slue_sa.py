@@ -5,7 +5,7 @@ from torch import cuda
 from fairseq.dataclass import FairseqDataclass
 from speechlm.models.speechlm_cls import SpeechLMSeqCls
 from speechlm.models.speechlm import SpeechlmModel
-from speechlm.tasks import audio_classification, joint_sc2t_pretrain
+from speechlm.tasks import sequence_classification, joint_sc2t_pretrain
 from sklearn.metrics import f1_score, precision_score, recall_score
 
 
@@ -50,6 +50,13 @@ def main():
         action="store_true",
         help="eval after inference. save in the same filename with output but .json format. default: True",
     )
+    parser.add_argument(
+        "--suffix",
+        type=str,
+        required=False,
+        default="",
+        help="suffix to add to the end of the output files",
+    )
     args = parser.parse_args()
     print(args)
 
@@ -93,7 +100,9 @@ def main():
             gt.append(input["label"])
     id2label = {i: l for i, l in enumerate(checkpoint.task.label2id)}
 
-    output_tsv = os.path.join(args.save_dir, f"pred-{args.subset}-{args.input}-input.sent")
+    if args.suffix:
+        args.suffix = f"-{args.suffix}"
+    output_tsv = os.path.join(args.save_dir, f"pred-{args.subset}-{args.input}{args.suffix}-input.sent")
     fid = open(output_tsv, "w")
     for sent_id in preds:
         fid.write(f"{id2label[sent_id]}\n")

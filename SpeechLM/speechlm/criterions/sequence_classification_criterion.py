@@ -30,7 +30,7 @@ class SequenceClassificationCriterionConfig(FairseqDataclass):
 
 # add slue_ as prefix of the registerred name in case there are conflicts in future
 @register_criterion(
-    "slue_sequence_classification", dataclass=SequenceClassificationCriterionConfig
+    "speechlm_sequence_classification", dataclass=SequenceClassificationCriterionConfig
 )
 class SequenceClassificationCriterion(FairseqCriterion):
     def __init__(self, cfg: SequenceClassificationCriterionConfig, task: FairseqTask):

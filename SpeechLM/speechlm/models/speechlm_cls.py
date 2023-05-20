@@ -325,8 +325,10 @@ class SpeechLMEncoder(FairseqEncoder):
 
         with torch.no_grad() if not ft else contextlib.ExitStack():
             x, padding_mask = self.w2v_model.extract_features(**w2v_args)
-            # B x T x C -> T x B x C
-            x = x.transpose(0, 1)
+            
+            if tbc:
+                # B x T x C -> T x B x C
+                x = x.transpose(0, 1)
 
         x = self.final_dropout(x)
 
