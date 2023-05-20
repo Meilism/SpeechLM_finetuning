@@ -68,7 +68,8 @@ bash scripts/download_datasets.sh
 Then go back to ``SpeechLM_finetuning/SpeechLM/``, and run the following command to fine-tune SpeechLM on SLUE sentiment analysis:
 ``` bash
 freeze_layers=number/of/frozen/layers/between/0~6
-bash speechlm/scripts/slue/finetune_base_speech_sa.sh $model_path $data_dir $exp_name $freeze_layers
+slue_path=path/to/slue/manifest
+bash speechlm/scripts/slue/finetune_base_speech_sa.sh $model_path ${slue_path}/slue-voxceleb/ $exp_name $freeze_layers
 ```
 After fine-tuning the model, you will get fine-tuned checkpoints in ``exp/finetune_slue_sa/ckpt/${exp_name}``.
 Before proceeding on, we need to a dirty trick to the checkpoint:
@@ -81,22 +82,22 @@ torch.save(state, finetuned_ckpt_pth)
 Then, you are ready to get the sentiment analysis results! The last step is:
 ``` bash
 save_dir=exp/finetune_slue_sa/ckpt/${exp_name}
-python3 -m speechlm.eval.eval_slue_speech_sa --data $data_dir --subset dev --save-dir $save_dir  --checkpoint-file checkpoint_best.pt --use-gpu --eval
+python3 -m speechlm.eval.eval_slue_speech_sa --data $slue_path --subset dev --save-dir $save_dir  --checkpoint-file checkpoint_best.pt --use-gpu --eval
 ```
 The results will also be put in ``$save_dir/``.
 
 ### Fine-Tune SpeechLM on Slue Sentiment Analysis with Text Inputs
 First prepare text inputs for SpeechLM
 ``` bash
-slue_path=path/to/slue/manifest
-bash speechlm/data_process/prepare_phn2ltr_slue.sh ${slue_path}/slue-voxceleb/ slue-voxceleb
-bash speechlm/data_process/prepare_phn2ltr_slue.sh ${slue_path}/slue-voxpopuli/ slue-voxpopuli 
+slue_data_dir=path/to/slue/manifest
+bash speechlm/data_process/prepare_phn2ltr_slue.sh ${slue_data_dir}/slue-voxceleb/ slue-voxceleb
+bash speechlm/data_process/prepare_phn2ltr_slue.sh ${slue_data_dir}/slue-voxpopuli/ slue-voxpopuli 
 ```
 
 Then run the code below to fine-tune SpeechLM on text inputs
 ``` bash
 freeze_layers=number/of/frozen/layers/between/0~6
-bash speechlm/scripts/slue/finetune_base_text_sa.sh $model_path $data_dir $exp_name $freeze_layers
+bash speechlm/scripts/slue/finetune_base_text_sa.sh $model_path ${slue_data_dir}/slue-voxceleb/ $exp_name $freeze_layers
 ```
 
 The fine-tuned checkpoint will be save in ``exp/finetune_slue_sa/ckpt/${exp_name}``.
@@ -112,252 +113,39 @@ Since the model is fine-tuned on text, we can evaluate it with either text or sp
 save_dir=exp/finetune_slue_sa/ckpt/${exp_name}
 input_type=speech/or/text
 text_data=path/to/the/bin-idx/dir # only used when input_type=text
-python3 -m speechlm.eval.eval_slue_text_sa --data $data_dir --input $input_type --subset dev --save-dir $save_dir  --checkpoint-file checkpoint_best.pt --use-gpu --eval [--text_data $text_data]
+python3 -m speechlm.eval.eval_slue_sa --data $data_dir --input $input_type --subset dev --save-dir $save_dir  --checkpoint-file checkpoint_best.pt --use-gpu --eval [--text_data $text_data]
 ```
 
-<!-- SpeechLMCLS redundancy -->
-<!-- freeze_-1 worse than original -->
+### Fine-Tune SpeechLM on Slue Named Entity Recognition with Speech or Text Inputs
+To fine-tune the model, run
+```bash
+bash speechlm/scripts/slue/finetune_base_speech_ner.sh $model_path ${slue_data_dir}/slue-voxpopuli/e2e_ner/ $exp_name $freeze_layers
+```
+or
+```bash
+bash speechlm/scripts/slue/finetune_base_text_ner.sh $model_path ${slue_data_dir}/slue-voxpopuli/e2e_ner/ $exp_name $freeze_layers
+```
+for speech and text fine-tuning, respectively.
 
-<!-- ## Sentiment Analysis on SLUE with Speech Inputs
-Download the SLUE dataset
-
-## Sentiment Analysis on SLUE with Text Inputs
-
-# SpeechLM
-
-
-## Extract features using pre-trained models
-For easier use of our pre-trained models, we merge all inference-related code to [`SpeechLM.py`](SpeechLM.py) and make cleaned checkpoints [~~`SpeechLM-P Base`~~](https://valle.blob.core.windows.net/share/speechlm/speechlmp_base_checkpoint_clean.pt?sv=2020-04-08&st=2023-04-04T05%3A42%3A17Z&se=2033-04-05T05%3A42%3A00Z&sr=b&sp=r&sig=DN7VwaEWhrhRPiyuT84mJpohrMeJsEPq4o6qRr8BNsk%3D) [`SpeechLM-H Base`](https://valle.blob.core.windows.net/share/speechlm/speechlmh_base_checkpoint_clean.pt?sv=2020-04-08&st=2023-04-04T05%3A43%3A07Z&se=2033-04-05T05%3A43%3A00Z&sr=b&sp=r&sig=T9oaIvrb3z3Wo5GTZp8eP2x7B7yuQ%2B80Ff1KhuWrrKg%3D) [`SpeechLM-P Large`](https://valle.blob.core.windows.net/share/speechlm/speechlmp_large_checkpoint_clean.pt?sv=2020-04-08&st=2023-04-04T05%3A43%3A33Z&se=2033-04-05T05%3A43%3A00Z&sr=b&sp=r&sig=qfWBNdiIGuDgkgUiHXaWnPiVbUHm3VSp%2FHTlWrCghRk%3D) by removing non-required modules. Now you can directly use the following script to extract your speech features:
+No matter the model is fine-tuned on speech or text, do the same trick again:
 ```python
-import torch
-import torch.nn.functional as F
-from SpeechLM import SpeechLMConfig, SpeechLM
-
-checkpoint = torch.load('path/to/the/cleaned/checkpoint.pt')
-cfg = SpeechLMConfig(checkpoint['cfg']['model'])
-model = SpeechLM(cfg)
-model.load_state_dict(checkpoint['model'])
-model.eval()
-
-wav_input_16khz = torch.randn(1,10000)
-normalize = checkpoint['cfg']['task']['normalize']  # False for base model, True for large model
-if normalize:
-    wav_input_16khz = F.layer_norm(wav_input_16khz[0], wav_input_16khz[0].shape).unsqueeze(0)
-
-# extract the representation of last layer
-rep = model.extract_features(wav_input_16khz)[0]
-
-# extract the representation of each layer
-output_layer = model.cfg.encoder_layers + model.cfg.text_transformer.encoder.layers
-rep, layer_results = model.extract_features(wav_input_16khz, output_layer=output_layer, ret_layer_results=True)[0]
-layer_reps = [x.transpose(0, 1) for x in layer_results]
+state = torch.load(finetuned_ckpt_pth)
+state['cfg']['model']['w2v_args'] = None
+torch.save(state, finetuned_ckpt_pth)
 ```
 
-
-## Setup
-To fine-tune or pre-train more models, please follow the instructions below.
-
+Then we can run ASR decoding to get the NER results!
+This step requires some additional packages, including [flashlight](https://github.com/flashlight/flashlight) and [kenlm](https://github.com/kpu/kenlm). 
+Make sure you have all dependencies set up before executing the following lines:
 ```bash
-git submodule update --init SpeechLM/fairseq
-cd SpeechLM/
-pip install --editable fairseq/
-pip install sacrebleu==1.5.1
+input_type=speech/or/text
+lm=nolm-argmax #"nolm-argmax" for argmax decoding, and "vp_ner/4" for decoding with kenlm
+lmdir=path/to/your/4gram/lm/ #only used in kenlm decoding
+max_tokens=4000000 #4000000 for speech inputs, and 10000 for text inputs
+python3 -m speechlm.eval.eval_slue_asr eval_ctc_model --data $slue_data_dir --subset dev --model $save_dir --lm $lm --user-dir ${PWD}/speechlm --max_tokens $max_tokens --input_type $input_type --text_data $text_data --lmdir $lmdir
 ```
 
-## ASR on LibriSpeech
-### Data preparation
-Please follow the steps of wav2vec 2.0 manifest [here](https://github.com/pytorch/fairseq/tree/main/examples/wav2vec#prepare-training-data-manifest) to prepare `train.tsv` and `train.ltr`. You should make sure the vocabulary [`dict.ltr.txt`](dataset/LibriSpeech/asr/dict.ltr.txt) is the same as that used for the pre-trained model.
-
-Put yout prepared data into `$data_dir`, we provided eamples in [`dataset/LibriSpeech/asr`](dataset/LibriSpeech/asr/). 
-
-### Fine-tune a CTC model
-- Fine-tune the base model
-    ```bash
-    # Usage: speechlm/scripts/tune_speechlm_asr/finetune_base_ctc.sh <model_path> <data_dir> <cpt_tag> [mount=$PWD] [world_size=8] [update_freq=1]
-    model_path=path/to/your/pre-trained/model
-    data_dir=dataset/LibriSpeech/asr
-    bash speechlm/scripts/tune_speechlm_asr/finetune_base_ctc.sh $model_path $data_dir 'tag400k'
-    ```
-- Fine-tune the large model
-    ```bash
-    # Usage: speechlm/scripts/tune_speechlm_asr/finetune_large_ctc.sh <model_path> <data_dir> <cpt_tag> [mount=$PWD] [world_size=8] [update_freq=4]
-    model_path=path/to/your/pre-trained/model
-    data_dir=dataset/LibriSpeech/asr
-    bash speechlm/scripts/tune_speechlm_asr/finetune_large_ctc.sh $model_path $data_dir 'tag400k'
-    ```
-### Decode
-- Directly decode a CTC model.
-    ```bash
-    # Usage: speechlm/scripts/tune_speechlm_asr/inference_ctc.sh <model_path> <data_dir> [gen-set=dev_clean,dev_other,test_clean,test_other]
-    model_path=path/to/your/fine-tuned/model
-    data_dir=dataset/LibriSpeech/asr
-    bash speechlm/scripts/tune_speechlm_asr/inference_ctc.sh $model_path $data_dir
-    # for large models
-    # bash speechlm/scripts/tune_speechlm_asr/inference_ctc_large.sh $model_path $data_dir
-    ```
-- Decode with 4-gram language model using [flashlight](https://github.com/flashlight/flashlight/tree/main/bindings/python) and [kenlm](https://github.com/kpu/kenlm).
-    > Please put [4-gram.arpa](https://www.openslr.org/resources/11/4-gram.arpa.gz) and the word-to-letter lexicon [librispeech_lexicon.lst](https://drive.google.com/file/d/1q7IbNGqtwXnctjvuvpviQ4ZmepFHQmTO/view?usp=sharing) into `$data_dir`.
-    ```bash
-    # Usage: speechlm/scripts/tune_speechlm_asr/inference_ctc_kenlm.sh <model_path> <data_dir> [gen-set=dev_clean,dev_other,test_clean,test_other]
-    model_path=path/to/your/fine-tuned/model
-    data_dir=dataset/LibriSpeech/asr
-    bash speechlm/scripts/tune_speechlm_asr/inference_ctc_kenlm.sh $model_path $data_dir
-    ```
-- Decode large models with fairseq-lm using [flashlight](https://github.com/flashlight/flashlight/tree/main/bindings/python).
-    > Please put [lm_librispeech_word_transformer.pt](https://dl.fbaipublicfiles.com/wav2letter/sota/2019/lm/lm_librispeech_word_transformer.pt) and its vocabulary [`dict.txt`](https://dl.fbaipublicfiles.com/wav2letter/sota/2019/lm/lm_librispeech_word_transformer.dict) into `$data_dir/fairseq_word_lm`, and the word-to-letter lexicon [librispeech_lexicon.lst](https://drive.google.com/file/d/1q7IbNGqtwXnctjvuvpviQ4ZmepFHQmTO/view?usp=sharing) into `$data_dir`. Capitalize the `dict.txt` to amke it compatible with the word-to-letter lexicon.
-    ```bash
-    # Usage: speechlm/scripts/tune_speechlm_asr/inference_ctc_large_fsqlm.sh <model_path> <data_dir> [gen-set=dev_clean,dev_other,test_clean,test_other]
-    model_path=path/to/your/fine-tuned/model
-    data_dir=dataset/LibriSpeech/asr
-    bash speechlm/scripts/tune_speechlm_asr/inference_ctc_large_fsqlm.sh $model_path $data_dir dev_other
-    ```
-
-## ST on CoVoST-2
-### Data Preparation
-1. Download [Common Voice audio clips](https://commonvoice.mozilla.org/en/datasets) (version 4) for English into `$cv_root/en`.
-2. Get data manifest. The following script will convert mp3 files to waveform, create tsv file containing speech/translation paires, create data config files.
-    ```bash
-    lang=de # ca,ar,tr
-    cv_root=dataset/CommonVoice/v4
-    bash speechlm/data_process/prepare_covost2_enxx.sh $lang $cv_root
-    ```
-    We provided examples in [`dataset/CommonVoice/v4/en/en-de`](dataset/CommonVoice/v4/en/en-de).
-
-### Fine-tune a encoder-decoder model
-- Fine-tune the Base model (fine-tuned models will be stored in `$mount/exp/finetune_covost`).
-
-    ```bash
-    model_path=path/to/your/pre-trained/model
-    lang=de # ca,ar,tr
-    data_dir=dataset/CommonVoice/v4/en/en-${lang}
-    # Usage (Base model): speechlm/scripts/tune_speechlm_st/ft_base_covost_enxx.sh <model_path> <data_dir> <lang> <cpt-tag> [mount=$PWD] [world_size=8] [update_freq=2]
-    bash speechlm/scripts/tune_speechlm_st/ft_base_covost_enxx.sh $model_path $data_dir $lang 'tag400k'
-    ```
-- Fine-tune the Large model (fine-tuned models will be stored in `$mount/exp/finetune_covost`).
-    ```bash
-    # Usage (Large model): speechlm/scripts/tune_speechlm_st/ft_large_covost_enxx.sh <model_path> <data_dir> <lang> <cpt-tag> [mount=$PWD] [world_size=8] [update_freq=4]
-    bash speechlm/scripts/tune_speechlm_st/ft_large_covost_enxx.sh $model_path $data_dir $lang 'tag400k'
-    ```
-
-### Decode
-- Decode the base model
-    ```bash
-    # Usage: speechlm/scripts/tune_speechlm_st/inference_base.sh <model_path> <data_dir> <lang> [gen-set=dev] [beam_size=5]
-    model_path=path/to/your/fine-tuned/model
-    lang=de # ca,ar,tr
-    data_dir=dataset/CommonVoice/v4/en/en-${lang}
-    bash speechlm/scripts/tune_speechlm_st/inference_base.sh $model_path $data_dir $lang dev
-    ```
-- Decode the large model
-    ```bash
-    # Usage: speechlm/scripts/tune_speechlm_st/inference_large.sh <model_path> <data_dir> <lang> [gen-set=dev] [beam_size=5]
-    bash speechlm/scripts/tune_speechlm_st/inference_large.sh $model_path $data_dir $lang dev
-    ```
-
-## Universal Representation Evaluation on SUPERB
-
-Please refer to [**SUPERB**](https://superbbenchmark.org/) for the downstreaming tasks.
-
-## Pre-train
-Please follow the instructions of [Tokenizer](README.md#Tokenizers) to prepare the pre-training data. We provided examples in [`dataset`](dataset).
-- SpeechLM-P Base model
-
-    Models will be stored in `$mount/pretrain`.
-    ```bash
-    data_dir=dataset/LibriSpeech/phone_unit   # should contain train_960.{tsv,phn}
-    text_data_dir=dataset/LibriLM/phone_unit/bin-idx     # should contain train_text.phn-ltr.{phn,ltr}.{bin,idx}
-    # Usage: speechlm/scripts/pretrain_speechlm/base_speechlmp.sh <data_dir> <text_data_dir> [mount=$PWD] [world_size=32] [update_freq=1]
-    bash speechlm/scripts/pretrain_speechlm/base_speechlmp.sh $data_dir $text_data_dir
-    ```
-- SpeechLM-H Base model
-    ```bash
-    data_dir=dataset/LibriSpeech/hidden_unit  # should contain train_960.{tsv,phn}
-    text_data_dir=dataset/LibriLM/km-ltr/bin-idx     # should contain train_text.km-ltr.{km,ltr}.{bin,idx}
-    # Usage: speechlm/scripts/pretrain_speechlm/base_speechlmh.sh <data_dir> <text_data_dir> [mount=$PWD] [world_size=32] [update_freq=1]
-    bash speechlm/scripts/pretrain_speechlm/base_speechlmp.sh $data_dir $text_data_dir
-    ```
-- SpeechLM-P Large model
-    ```bash
-    data_dir=dataset/LibriSpeech/phone_unit   # should contain train_960.{tsv,phn}
-    text_data_dir=dataset/LibriLM/phone_unit/bin-idx     # should contain train_text.phn-ltr.{phn,ltr}.{bin,idx}
-    # Usage: speechlm/scripts/pretrain_speechlm/base_speechlmp.sh <data_dir> <text_data_dir> [mount=$PWD] [world_size=32] [update_freq=1]
-    bash speechlm/scripts/pretrain_speechlm/large_speechlmp.sh $data_dir $text_data_dir
-    ```
-
-
-## Tokenizers
-### Phoneme-unit Tokenizer for Speech
-This tokenizer is used to produce the frame-laigned phonemes for unlabeled speech, which is actually a hybrid HMM ASR model.
-
-In the Base setting, we use 100h LibriSpeech labeled data to train the HMM model under Kaldi recipe, then decode the unpaired speech and get the aligned phonemes from the lattice.
-Here we provided the processed phonemes of 960h speech here: [`train_960.tsv`](https://drive.google.com/file/d/1rxlikMglL2kEsF4NfqekZRoA02klY7CE/view?usp=sharing), [`train_960.phn`](), [`dev_clean.tsv`](https://drive.google.com/file/d/1NuVwe687jLBFkDLRy1EV2A2uXyV_kBo2/view?usp=sharing), [`dev_clean.phn`](https://drive.google.com/file/d/1cq_gbS-UgCALOoaE5QmhWrhkTdXuc_Uc/view?usp=sharing). Note that the label-rate is 100 (10ms).
-
-> The phoneme inventory is 300+ word-position-dependent phones including silence phones.
-
-### Phoneme-unit Tokenizer for Text
-This tokenizer is used to phonemize the unpaired text data to (phonemes, letters) paired data, following a `words -> phonemes -> upsampled phones` pipeline.
-
-The following script will download LibriSpeech LM corpus and produce the required data: `train_text.phn-ltr.phn.{idx,bin}` and `train_text.phn-ltr.ltr.{idx,bin}`. 
-> Before runing it, make sure you have our provided [`dict.phn.txt`](dataset/LibriLM/phone_unit/bin-idx/dict.phn.txt) and [`dict.ltr.txt`](dataset/LibriLM/phone_unit/bin-idx/dict.ltr.txt) in the output dir `dataset/LibriLM/phone_unit/bin-idx/`.
-
-> The phoneme inventory is 300+ word-position-dependent phones including silence phones.
-
+In the end, compute f1 score by running
 ```bash
-# data will be in dataset/LibriLM/phone_unit/
-bash speechlm/data_process/prepare_phn2ltr_librilm.sh
+python3 -m speechlm.eval.eval_slue_ner eval_ner --model_dir $save_dir --input_type $input_type --eval_set dev --eval_label combined --lm $lm
 ```
-### Hidden-unit Tokenizer for Speech
-Please follow the steps of data preparation for HuBERT [here](https://github.com/facebookresearch/fairseq/tree/main/examples/hubert#data-preparation) to prepare 1) wav recordings [`train.tsv`](dataset/LibriSpeech/hidden_unit/train_sample100.tsv) and 2) corresponding hidden-units [`train.km`](dataset/LibriSpeech/hidden_unit/train_sample100.km), and 3) unit vocabulary [`dict.km.txt`](dataset/LibriSpeech/hidden_unit/dict.km.txt).
-
-### Hidden-unit Tokenizer for Text
-This tokenizer is used to produce the speech-style hidden units from unpaired text.
-We train a [FastSpeech](https://arxiv.org/abs/2006.04558)-like model (instead generating continuous spectrum in the original paper, here we generate discrete units) on a small amount of ASR data ([100 hrs LibriSpeech](http://www.openslr.org/12)) as the tokenizer.
-
-Train:
-1. Convert asr transcripts to phoneme sequence with duration information.
-2. Extract hidden-units from speech, using the [Hidden-unit Tokenizer for Speech](#hidden-unit-tokenizer-for-speech).
-3. Train the [model](speechlm/models/fasttext2unit.py) on the paired data:
-    ```bash
-    data_dir=dataset/LibriSpeech/fast_phone2unit
-    bash speechlm/scripts/tokenizer_fastT2U/train_s_5e-4.sh $data_dir
-    ```
-> The phoneme inventory is 41 mono phones including silence phones.
-
-Inference:
-
-4. Convert text data to phoneme sequence by [`lexicon`](https://drive.google.com/file/d/1dh9NEx_cCF9_Aa0UcKyl9j00GXs6LmLQ/view?usp=sharing).
-5. [Generate](speechlm/scripts/tokenizer_fastT2U/generate.sh) hidden units for a large text corpus:
-    ```bash
-    gen_set=dataset/LibriSpeech/fast_phone2unit/genset_examples
-    bash speechlm/scripts/tokenizer_fastT2U/generate.sh $model_path $gen_set
-    ```
-We provided train/generate data examples in [`dataset/LibriSpeech/fast_phone2unit`](dataset/LibriSpeech/fast_phone2unit), and the model checkpoint [here](https://drive.google.com/file/d/1e-aYf8hPXuly8DEvNg5SISOlcUxsgED0/view?usp=sharing).
-
-## License
-
-This project is licensed under the license found in the LICENSE file in the root directory of this source tree.
-Portions of the source code are based on the [FAIRSEQ](https://github.com/pytorch/fairseq).
-
-[Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct)
-
-## Reference
-
-If you find our work is useful in your research, please cite the following paper:
-
-```bibtex
-@article{zhang2022speechlm,
-  title   = {SpeechLM: Enhanced Speech Pre-Training with Unpaired Textual Data},
-  author  = {Zhang, Ziqiang and Chen, Sanyuan and Zhou, Long and Wu, Yu and Ren, Shuo and Liu, Shujie and Yao, Zhuoyuan and Gong, Xun and Dai, Lirong and Li, Jinyu and Wei, Furu},
-  eprint={2209.15329},
-  archivePrefix={arXiv},
-  primaryClass={cs.CL},
-  year={2022}
-}
-```
-
-### Contact Information
-
-For help or issues using SpeechLM models, please submit a GitHub issue.
-
-For other communications related to SpeechLM, please contact Long Zhou (`lozhou@microsoft.com`). -->
-
