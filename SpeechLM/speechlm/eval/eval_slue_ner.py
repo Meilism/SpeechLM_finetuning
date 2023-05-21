@@ -110,7 +110,7 @@ def eval_ner(
         lm = lm.replace("/", "_")
         decoded_data_dir = os.path.join(model_dir, "decode", input_type, lm)
         lm += "gram"
-    log_dir = os.path.join(model_dir, "metrics", input_type)
+    log_dir = os.path.join(model_dir, "metrics", input_type, lm)
     os.makedirs(log_dir, exist_ok=True)
     if save_results:
         ner_results_dir = os.path.join(log_dir, "error_analysis")

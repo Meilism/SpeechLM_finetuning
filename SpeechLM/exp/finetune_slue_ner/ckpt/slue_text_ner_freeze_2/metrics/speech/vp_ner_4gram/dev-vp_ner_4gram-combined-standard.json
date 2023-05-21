@@ -1,0 +1,47 @@
+{
+    "NORP": {
+        "precision": 0.9130434782608695,
+        "recall": 0.09545454545454546,
+        "fscore": 0.17283950617283952
+    },
+    "ORG": {
+        "precision": 0.5,
+        "recall": 0.007722007722007722,
+        "fscore": 0.015209125475285173
+    },
+    "PLACE": {
+        "precision": 0.9879518072289156,
+        "recall": 0.1277258566978193,
+        "fscore": 0.22620689655172413
+    },
+    "WHEN": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "fscore": 0.0
+    },
+    "QUANT": {
+        "precision": 0.8333333333333334,
+        "recall": 0.01529051987767584,
+        "fscore": 0.03003003003003003
+    },
+    "PERSON": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "fscore": 0.0
+    },
+    "LAW": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "fscore": 0.0
+    },
+    "overall_micro": {
+        "precision": 0.9322033898305084,
+        "recall": 0.060472787245739415,
+        "fscore": 0.1135776974703149
+    },
+    "overall_macro": {
+        "precision": 0.4620469455461598,
+        "recall": 0.03517041853600691,
+        "fscore": 0.06346936546141126
+    }
+}

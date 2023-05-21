@@ -1,0 +1,2 @@
+dev,/share/data/speech/cmchien/course/unsupervised/SpeechLM_finetuning/SpeechLM/exp/finetune_slue_ner/ckpt/slue_text_ner_freeze_1/,vp_ner/4,speech,98854228,4200448,192.6282232706435,29.121485212396195
+dev,/share/data/speech/cmchien/course/unsupervised/SpeechLM_finetuning/SpeechLM/exp/finetune_slue_ner/ckpt/slue_text_ner_freeze_1/,vp_ner/4,text,98854228,4200448,56.5255889124237,7.448649775831509
