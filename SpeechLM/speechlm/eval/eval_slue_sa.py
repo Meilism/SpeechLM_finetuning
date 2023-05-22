@@ -75,12 +75,15 @@ def main():
     if args.input == "speech":
         task_cfg = checkpoint.task.cfg
         task_cfg.data = args.data
-        task = audio_classification.AudioClassificationTask(task_cfg)
+        task = sequence_classification.AudioClassificationTask(task_cfg)
     elif args.input == "text":
-        task_cfg = audio_classification.TextClassificationConfig(**checkpoint.task.cfg)
+        if checkpoint.task.cfg['_name'] == 'slue_audio_classification':
+            task_cfg = sequence_classification.TextClassificationConfig(**checkpoint.task.cfg)
+        else:
+            task_cfg = checkpoint.task.cfg
         task_cfg.data = args.data
         task_cfg.text_data = args.text_data
-        task = audio_classification.TextClassificationTask(task_cfg)
+        task = sequence_classification.TextClassificationTask(task_cfg)
     task.load_dataset(args.subset)
     task.load_label2id
     checkpoint.to(device)

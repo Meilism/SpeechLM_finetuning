@@ -1,0 +1,17 @@
+{
+    "macro": {
+        "f1": 100.0,
+        "precision": 100.0,
+        "recall": 100.0
+    },
+    "micro": {
+        "f1": 100.0,
+        "precision": 100.0,
+        "recall": 100.0
+    },
+    "per_classes": {
+        "Negative": 100.0,
+        "Neutral": 100.0,
+        "Positive": 100.0
+    }
+}

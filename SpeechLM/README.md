@@ -82,7 +82,8 @@ torch.save(state, finetuned_ckpt_pth)
 Then, you are ready to get the sentiment analysis results! The last step is:
 ``` bash
 save_dir=exp/finetune_slue_sa/ckpt/${exp_name}
-python3 -m speechlm.eval.eval_slue_speech_sa --data $slue_path --subset dev --save-dir $save_dir  --checkpoint-file checkpoint_best.pt --use-gpu --eval
+input_type=speech
+python3 -m speechlm.eval.eval_slue_sa --data $slue_path --input $input_type --subset dev --save-dir $save_dir  --checkpoint-file checkpoint_best.pt --use-gpu --eval
 ```
 The results will also be put in ``$save_dir/``.
 

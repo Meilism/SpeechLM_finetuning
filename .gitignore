@@ -1,4 +1,21 @@
 __pycache__/
 .hydra/
 *.pt
+*.out
 *.log
+*.swp
+
+# ASR predictions
+*.wrd
+hypo.units*
+ref.units*
+hypo.word*
+ref.word*
+
+# preprocessed text files in dataset/**/
+*lexicon.txt
+*ltr.phn
+*ltr.ltr
+*.bin
+*.idx
+*dict.txt
