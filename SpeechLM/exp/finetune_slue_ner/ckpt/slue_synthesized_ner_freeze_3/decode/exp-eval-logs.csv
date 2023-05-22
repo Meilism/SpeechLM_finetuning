@@ -1,0 +1,4 @@
+dev,/share/data/speech/cmchien/course/unsupervised/SpeechLM_finetuning/SpeechLM/exp/finetune_slue_ner/ckpt/slue_synthesized_ner_freeze_3/,nolm-argmax,speech,98854228,4200448,23.576400078833103,22.461339937977396
+dev,/share/data/speech/cmchien/course/unsupervised/SpeechLM_finetuning/SpeechLM/exp/finetune_slue_ner/ckpt/slue_synthesized_ner_freeze_3/,vp_ner/4,speech,98854228,4200448,578.6882936675102,18.60053697421275
+dev,/share/data/speech/cmchien/course/unsupervised/SpeechLM_finetuning/SpeechLM/exp/finetune_slue_ner/ckpt/slue_synthesized_ner_freeze_3/,nolm-argmax,text,98854228,4200448,13.767939172685146,9.006360129287874
+dev,/share/data/speech/cmchien/course/unsupervised/SpeechLM_finetuning/SpeechLM/exp/finetune_slue_ner/ckpt/slue_synthesized_ner_freeze_3/,vp_ner/4,text,98854228,4200448,663.3423677682877,7.922010217912627
