@@ -7,7 +7,7 @@
 # Licensed under The MIT License [see LICENSE for details]
 # ----------------------------------------------------------------------------
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from fairseq.models import BaseFairseqModel, register_model
 from fairseq.tasks import FairseqTask
 
@@ -15,7 +15,12 @@ from fairseq.models.hubert import HubertAsrConfig, HubertCtc, HubertEncoder
 
 @dataclass
 class SpeechLMCtcConfig(HubertAsrConfig):
-    pass
+    autoregressive: bool = field(
+        default=False,
+        metadata={
+            "help": "Missing default key"
+        },
+    )
 
 
 @register_model("speechlm_ctc", dataclass=SpeechLMCtcConfig)
